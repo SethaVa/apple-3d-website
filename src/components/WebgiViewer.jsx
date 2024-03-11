@@ -17,6 +17,7 @@ import {
   SSAOPlugin,
   BloomPlugin,
   GBufferPlugin,
+  mobileAndTabletCheck,
 } from "webgi";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -32,6 +33,7 @@ const WebgiViewer = forwardRef((props, ref) => {
   const [positionRef, setPositionRef] = useState(null);
   const canvasContentRef = useRef(null);
   const [previewMode, setPreviewMode] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   useImperativeHandle(ref, () => ({
     triggerPreview() {
@@ -55,11 +57,14 @@ const WebgiViewer = forwardRef((props, ref) => {
     },
   }));
 
-  const memorizedScrollAnimation = useCallback((position, target, onUpdate) => {
-    if (position && target && onUpdate) {
-      scrollAnimation(position, target, onUpdate);
-    }
-  }, []);
+  const memorizedScrollAnimation = useCallback(
+    (position, target, isMobile, onUpdate) => {
+      if (position && target && onUpdate) {
+        scrollAnimation(position, target, isMobile, onUpdate);
+      }
+    },
+    []
+  );
 
   const setupViewer = useCallback(async () => {
     const viewer = new ViewerApp({
@@ -67,6 +72,8 @@ const WebgiViewer = forwardRef((props, ref) => {
     });
 
     setViewerRef(viewer);
+    const isMobileOrTablet = mobileAndTabletCheck();
+    setIsMobile(isMobileOrTablet);
 
     const manager = await viewer.addPlugin(AssetManagerPlugin);
 
@@ -95,6 +102,12 @@ const WebgiViewer = forwardRef((props, ref) => {
 
     viewer.scene.activeCamera.setCameraOptions({ controlsEnabled: false });
 
+    if (isMobileOrTablet) {
+      position.set(-16.7, 1.17, 11.7);
+      target.set(0, 1.37, 0);
+      props.contentRef.current.className = "mobile-or-tablet";
+    }
+
     window.scrollTo(0, 0);
 
     let needsUpdate = true;
@@ -111,7 +124,7 @@ const WebgiViewer = forwardRef((props, ref) => {
       }
     });
 
-    memorizedScrollAnimation(position, target, onUpdate);
+    memorizedScrollAnimation(position, target, isMobileOrTablet, onUpdate);
   }, []);
 
   useEffect(() => {
